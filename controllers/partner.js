@@ -72,16 +72,22 @@ const characterSetting = async (req, res) => {
   const userId = req.user._id;
 
   try {
-    // update partner
-    const partner = await Partner.findOne({ userId: userId });
-    partner.nickname = nickname;
-    partner.name = name;
-    partner.MBTI = MBTI;
-    partner.job = job;
-    partner.personality = personality;
-    await partner.save();
+    if(!userId){
+      res.status(201).json({ message: "The user has not yet selected a partner" });
+    }
+    else{
+      const partner = await Partner.findOne({ userId: userId });
 
-    res.status(201).json({ message: "CharacterSetting success" });
+      // update partner
+      partner.nickname = nickname;
+      partner.name = name;
+      partner.MBTI = MBTI;
+      partner.job = job;
+      partner.personality = personality;
+      await partner.save();
+
+      res.status(201).json({ message: "CharacterSetting success" });
+    };
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: "Internal server error" });
