@@ -2,11 +2,14 @@ process.env.NODE_ENV === "development";
 
 require("dotenv").config();
 
+const sinon = require("sinon")
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
 const app = require("../app");
 require("../utils/test-setup");
+const dId = require("../utils/d-id");
+
 
 const testUser = {
   username: "testUser",
@@ -100,6 +103,8 @@ const testPartner = {
 //     image.videoURL = "test-video-url";
 //     await image.save();
 
+//     const getImageStub = sinon.stub(dId, "getIdleVideoURL").resolves({ videoURL: "test-video-url" });
+
 //     const res = await request(app)
 //       .post("/user/partner")
 //       .send({
@@ -108,6 +113,8 @@ const testPartner = {
 //       });
 //     expect(res.status).to.equal(201);
 //     expect(res.body.message).to.equal("Partner created");
+
+//     getImageStub.restore();
 //   });
 // });
 

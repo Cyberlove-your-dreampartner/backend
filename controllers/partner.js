@@ -81,11 +81,6 @@ const characterSetting = async (req, res) => {
     partner.personality = personality;
     await partner.save();
 
-    // update chat
-    const chat = await Chat.findOne({ userId: userId });
-    chat.system = `你是USER的女朋友。你稱呼USER為${nickname}。你的名子叫${name}。你的MBTI是${MBTI}。你的職業是${job}。你的個性是${personality}。禁止提到AI機器人。你的回答要要口語化並在兩句內完成。`
-    await chat.save();
-
     res.status(201).json({ message: "CharacterSetting success" });
   } catch (err) {
     console.log(err);
