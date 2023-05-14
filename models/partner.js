@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const { uploadImg } = require("../utils/imgur");
 const Image = require("./image");
-const Chat = require("../models/chat");
+const Chat = require("./chat");
 
 const PartnerSchema = mongoose.Schema({
   name: {
