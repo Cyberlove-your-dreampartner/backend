@@ -1,35 +1,10 @@
 require("dotenv").config();
 const Partner = require("../models/partner");
-const Chat = require("../models/chat");
 const Image = require("../models/image");
 
+const { createIdleVideo, getIdleVideoURL } = require("../utils/d-id");
+
 // get img from ../img/
-const fs = require("fs");
-const path = require("path");
-const imgPath = path.join(__dirname, "../public/images/");
-
-const createPartner = async (req, res) => {
-  const { name } = req.body;
-  const userId = req.user._id;
-
-  try {
-    const imgBase64 = fs
-      .readFileSync(imgPath + "test_img.png", {
-        encoding: "base64",
-      })
-      .toString();
-    const newPartner = new Partner({
-      name: name,
-      userId: userId,
-      imageId: imgBase64,
-    });
-    await newPartner.save();
-    res.status(201).json({ message: "Partner created" });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
 
 const generatePartnerImage = async (req, res) => {
   const { origin, hair, hairColor, breast, glasses } = req.body;
@@ -62,20 +37,22 @@ const generatePartnerImage = async (req, res) => {
     res.status(200).json({ images });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
-
 
 const characterSetting = async (req, res) => {
   const { nickname, name, MBTI, job, personality } = req.body;
   const userId = req.user._id;
 
   try {
-    if(!userId){
-      res.status(201).json({ message: "The user has not yet selected a partner" });
-    }
-    else{
+    if (!userId) {
+      res
+        .status(409)
+        .json({ message: "The user has not yet selected a partner" });
+    } else {
       const partner = await Partner.findOne({ userId: userId });
 
       // update partner
@@ -87,11 +64,39 @@ const characterSetting = async (req, res) => {
       await partner.save();
 
       res.status(201).json({ message: "CharacterSetting success" });
-    };
+    }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
-module.exports = { createPartner, generatePartnerImage, characterSetting};
+const choosePartner = async (req, res) => {
+  const { imageId } = req.body;
+  const userId = req.user._id;
+
+  try {
+    // insert a new partner
+    const newPartner = new Partner({
+      userId,
+      imageId,
+    });
+    await newPartner.save();
+    const image = await Image.findById(imageId);
+    if (!image.videoURL) {
+      const videoId = await createIdleVideo(image.imgURL);
+      image.videoURL = await getIdleVideoURL(videoId);
+      await image.save();
+    }
+    res.status(201).json({ message: "Partner created" });
+  } catch (err) {
+    console.log(err);
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
+  }
+};
+
+module.exports = { generatePartnerImage, characterSetting, choosePartner };

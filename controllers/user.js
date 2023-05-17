@@ -2,10 +2,6 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
-const Partner = require("../models/partner");
-const Image = require("../models/image");
-
-const { createIdleVideo, getIdleVideoURL } = require("../utils/d-id");
 
 const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -26,7 +22,9 @@ const register = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -58,32 +56,9 @@ const login = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
-  }
-};
-
-const choosePartner = async (req, res) => {
-  const { name, imageId } = req.body;
-  const userId = req.user._id;
-
-  try {
-    // insert a new partner
-    const newPartner = new Partner({
-      name,
-      userId,
-      imageId,
-    });
-    await newPartner.save();
-    const image = await Image.findById(imageId);
-    if (!image.videoURL) {
-      const videoId = await createIdleVideo(image.imgURL);
-      image.videoURL = await getIdleVideoURL(videoId);
-      await image.save();
-    }
-    res.status(201).json({ message: "Partner created" });
-  } catch (err) {
-    console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -107,6 +82,5 @@ const userStatus = async (req, res) => {
 module.exports = {
   register,
   login,
-  choosePartner,
   userStatus
 };
