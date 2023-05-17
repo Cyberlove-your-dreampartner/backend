@@ -10,7 +10,6 @@ const sinon = require('sinon');
 
 const app = require("../app");
 
-require("../utils/test-setup");
 
 const testUser = {
   username: "testUser",
