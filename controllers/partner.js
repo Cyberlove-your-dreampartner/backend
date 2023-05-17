@@ -1,7 +1,8 @@
 require("dotenv").config();
 const Partner = require("../models/partner");
-const Chat = require("../models/chat");
 const Image = require("../models/image");
+
+const { createIdleVideo, getIdleVideoURL } = require("../utils/d-id");
 
 // get img from ../img/
 
@@ -49,7 +50,7 @@ const characterSetting = async (req, res) => {
   try {
     if (!userId) {
       res
-        .status(201)
+        .status(409)
         .json({ message: "The user has not yet selected a partner" });
     } else {
       const partner = await Partner.findOne({ userId: userId });
@@ -72,4 +73,30 @@ const characterSetting = async (req, res) => {
   }
 };
 
-module.exports = { generatePartnerImage, characterSetting };
+const choosePartner = async (req, res) => {
+  const { imageId } = req.body;
+  const userId = req.user._id;
+
+  try {
+    // insert a new partner
+    const newPartner = new Partner({
+      userId,
+      imageId,
+    });
+    await newPartner.save();
+    const image = await Image.findById(imageId);
+    if (!image.videoURL) {
+      const videoId = await createIdleVideo(image.imgURL);
+      image.videoURL = await getIdleVideoURL(videoId);
+      await image.save();
+    }
+    res.status(201).json({ message: "Partner created" });
+  } catch (err) {
+    console.log(err);
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
+  }
+};
+
+module.exports = { generatePartnerImage, characterSetting, choosePartner };
