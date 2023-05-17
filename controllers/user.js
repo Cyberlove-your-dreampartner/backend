@@ -26,7 +26,9 @@ const register = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -58,7 +60,9 @@ const login = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -83,7 +87,9 @@ const choosePartner = async (req, res) => {
     res.status(201).json({ message: "Partner created" });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
