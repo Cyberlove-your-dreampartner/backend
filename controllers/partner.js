@@ -49,7 +49,7 @@ const characterSetting = async (req, res) => {
   try {
     if (!userId) {
       res
-        .status(201)
+        .status(409)
         .json({ message: "The user has not yet selected a partner" });
     } else {
       const partner = await Partner.findOne({ userId: userId });
