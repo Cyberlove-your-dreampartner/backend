@@ -19,7 +19,9 @@ const getImgURL = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -61,7 +63,9 @@ const replyMessage = async (req, res) => {
     res.status(200).json({ script: script, config: config });
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -86,7 +90,9 @@ const getIdleVideo = async (req, res) => {
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
 
@@ -98,12 +104,13 @@ const getChatHistory = async (req, res) => {
     if (!chat) {
       res.status(404).json({ message: "Partner not found" });
     } else {
-      
       res.status(200).json({ chatHistory: chat.messages });
     }
   } catch (err) {
     console.log(err);
-    res.status(500).json({ message: "Internal server error" });
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
-module.exports = { getImgURL, replyMessage, getIdleVideo ,getChatHistory};
+module.exports = { getImgURL, replyMessage, getIdleVideo, getChatHistory };
