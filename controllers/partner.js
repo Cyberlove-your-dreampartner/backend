@@ -2,7 +2,8 @@ require("dotenv").config();
 const Partner = require("../models/partner");
 const Image = require("../models/image");
 
-const { createIdleVideo, getIdleVideoURL } = require("../utils/d-id");
+const DID = require("../utils/d-id");
+const CLOUDINARY = require("../utils/cloudinary");
 
 // get img from ../img/
 
@@ -86,8 +87,9 @@ const choosePartner = async (req, res) => {
     await newPartner.save();
     const image = await Image.findById(imageId);
     if (!image.videoURL) {
-      const videoId = await createIdleVideo(image.imgURL);
-      image.videoURL = await getIdleVideoURL(videoId);
+      const videoId = await DID.createIdleVideo(image.imgURL);
+      const didVideoURL = await DID.getIdleVideoURL(videoId);
+      image.videoURL = await CLOUDINARY.uploadVideo(didVideoURL);
       await image.save();
     }
     res.status(201).json({ message: "Partner created" });
