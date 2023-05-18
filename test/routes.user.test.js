@@ -12,7 +12,6 @@ const User = require("../models/user");
 const Partner = require("../models/partner");
 
 describe("POST /user/register", () => {
-
   let findOneStub;
   let saveStub;
 
@@ -21,6 +20,7 @@ describe("POST /user/register", () => {
     saveStub = sinon.stub(User.prototype, "save");
   });
 
+  // Restore the stubs after each test
   afterEach(() => {
     findOneStub.restore();
     saveStub.restore();
@@ -33,16 +33,20 @@ describe("POST /user/register", () => {
       password: "password",
     };
 
-    findOneStub.resolves(null); // Simulate user does not exist
-    saveStub.resolves(); // Simulate successful save
+    // Simulate user does not exist
+    findOneStub.resolves(null);
+    // Simulate successful save
+    saveStub.resolves();
 
+    // Send a POST request to register User
     const response = await request(app)
       .post("/user/register")
       .send(userData);
 
+    // Perform assertions on the response
     expect(response.status).to.equal(201);
     expect(response.body.message).to.equal("User created");
-
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
     sinon.assert.calledOnce(saveStub);
   });
@@ -54,45 +58,49 @@ describe("POST /user/register", () => {
       password: "password",
     };
 
-    findOneStub.resolves({ username: "testuser" }); // Simulate user already exists
+    // Simulate user already exists
+    findOneStub.resolves({ username: "testuser" });
 
+    // Send a POST request to register User
     const response = await request(app)
       .post("/user/register")
       .send(userData);
 
+    // Perform assertions on the response
     expect(response.status).to.equal(409);
     expect(response.body.message).to.equal("User already exists");
-
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
     sinon.assert.notCalled(saveStub);
   });
 
-  it('should return err.name + err.message if err.name is not empty', async () => {
+  it("should return err.name + err.message if err.name is not empty", async () => {
     const userData = {
-      username: 'testuser',
-      email: 'testuser@example.com',
-      password: 'testpassword',
+      username: "testuser",
+      email: "testuser@example.com",
+      password: "testpassword",
     };
 
     findOneStub.throws({
-      name: 'CustomError',
-      message: 'Custom error message',
+      name: "CustomError",
+      message: "Custom error message",
     });
 
+    // Send a POST request to register User
     const response = await request(app)
-      .post('/user/register')
+      .post("/user/register")
       .send(userData);
 
+    // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body.message).to.equal('CustomError Custom error message');
-
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
     sinon.assert.notCalled(saveStub);
   });
 });
 
 describe("POST /user/login", () => {
-
   let findOneStub;
   let signStub;
 
@@ -133,7 +141,7 @@ describe("POST /user/login", () => {
     // Perform assertions on the response
     expect(response.status).to.equal(200);
     expect(response.body).to.have.property("authorization");
-
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
     sinon.assert.calledOnce(signStub);
   });
@@ -155,8 +163,9 @@ describe("POST /user/login", () => {
     // Perform assertions on the response
     expect(response.status).to.equal(409);
     expect(response.body.message).to.equal("User not found");
-
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
   });
 
   it("should return an error if the password is incorrect", async () => {
@@ -182,7 +191,9 @@ describe("POST /user/login", () => {
     // Perform assertions on the response
     expect(response.status).to.equal(409);
     expect(response.body.message).to.equal("Password incorrect");
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
   });
 
   it("should return an error if an exception is thrown", async () => {
@@ -194,8 +205,8 @@ describe("POST /user/login", () => {
 
     // Simulate a database error
     findOneStub.throws({
-      name: 'CustomError',
-      message: 'Custom error message',
+      name: "CustomError",
+      message: "Custom error message",
     });
 
     // Send a request to the login endpoint
@@ -205,40 +216,46 @@ describe("POST /user/login", () => {
 
     // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body.message).to.equal('CustomError Custom error message');
-
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
   });
 });
 
-describe('Get /user/status', () => {
+describe("Get /user/status", () => {
   let verifyStub;
+  let findOneStub;
 
   // Set up stubs before each test
   beforeEach(() => {
     // Stub the JWT verification function
     verifyStub = sinon.stub(jwt, "verify");
+
+    // Stub the findOne method of the Partner model
+    findOneStub = sinon.stub(Partner, "findOne")
   });
 
   // Restore stubs after each test
   afterEach(() => {
     verifyStub.restore();
-    sinon.restore();
+    findOneStub.restore();
   });
 
-  it('should return user status as false if no partner exists', async () => {
+  it("should return user status as false if no partner exists", async () => {
 
     verifyStub.returns({ userId: "fakeUserId" });
     // Stub Partner.findOne to return null (no partner exists)
-    const findOneStub = sinon.stub(Partner, 'findOne').resolves(null);
+    findOneStub.resolves(null);
 
     const response = await request(app)
-      .get('/user/status')
-      .set('Authorization', 'jwtToken');
+      .get("/user/status")
+      .set("Authorization", "jwtToken");
 
+    // Perform assertions on the response
     expect(response.status).to.equal(200);
     expect(response.body.userInfo.status).to.equal(false);
-
+    // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
     sinon.assert.calledOnce(findOneStub);
   });
