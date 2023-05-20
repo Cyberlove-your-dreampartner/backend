@@ -1,5 +1,8 @@
 process.env.NODE_ENV === "development";
 
+const Partner = require("../models/partner");
+const Image = require("../models/image");
+
 require("dotenv").config();
 
 const { describe, it } = require("mocha");
@@ -8,12 +11,11 @@ const request = require("supertest");
 const sinon = require("sinon")
 
 const app = require("../app");
-const dId = require("../utils/d-id");
+const DID = require("../utils/d-id");
 const CLOUDINARY = require("../utils/cloudinary");
 const jwt = require("jsonwebtoken");
 
-const Partner = require("../models/partner");
-const Image = require("../models/image");
+
 
 
 describe("POST /partner/generateImage", () => {
@@ -262,10 +264,10 @@ describe("POST /partner/", () => {
     findImageStub = sinon.stub(Image, "findById");
 
     // Stub the createIdleVideo function
-    createIdleVideoStub = sinon.stub(dId, "createIdleVideo");
+    createIdleVideoStub = sinon.stub(DID, "createIdleVideo");
 
     // Stub the getIdleVideoURL function
-    getIdleVideoURLStub = sinon.stub(dId, "getIdleVideoURL");
+    getIdleVideoURLStub = sinon.stub(DID, "getIdleVideoURL");
 
     // Stub the getIdleVideoURL function
     uploadVideoStub = sinon.stub(CLOUDINARY, "uploadVideo");

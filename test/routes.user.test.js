@@ -1,5 +1,8 @@
 process.env.NODE_ENV === "development";
 
+const User = require("../models/user");
+const Partner = require("../models/partner");
+
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
@@ -7,9 +10,6 @@ const sinon = require("sinon")
 
 const app = require("../app");
 const jwt = require("jsonwebtoken");
-
-const User = require("../models/user");
-const Partner = require("../models/partner");
 
 describe("POST /user/register", () => {
   let findOneStub;
