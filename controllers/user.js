@@ -2,6 +2,7 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
+const Partner = require("../models/partner");
 
 const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -66,15 +67,12 @@ const userStatus = async (req, res) => {
   const userId = req.user._id;
   const partner = await Partner.findOne({ userId: userId });
 
-  try{
-    if (!partner) {
-      res.status(200).json({ status: false });
-    }
-    else {
-      res.status(200).json({ status: true });
-    }
-  }
-  catch (err) {
+  try {
+    let userInfo = {};
+    if (!partner) userInfo.status = false;
+    else userInfo.status = true;
+    res.status(200).json({ userInfo: userInfo });
+  } catch (err) {
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -82,5 +80,5 @@ const userStatus = async (req, res) => {
 module.exports = {
   register,
   login,
-  userStatus
+  userStatus,
 };
