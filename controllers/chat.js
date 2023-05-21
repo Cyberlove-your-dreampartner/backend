@@ -2,8 +2,8 @@ const Partner = require("../models/partner");
 const Image = require("../models/image");
 const Chat = require("../models/chat");
 
-const { getReply } = require("../utils/openai");
-const { getIdleVideoURL } = require("../utils/d-id");
+const OPENAI = require("../utils/openai");
+const DID = require("../utils/d-id");
 
 const getImgURL = async (req, res) => {
   const userId = req.user._id;
@@ -42,7 +42,7 @@ const replyMessage = async (req, res) => {
     await chat.insertMessage("user", message);
     // get reply
     // only get less 10 messages
-    const reply = await getReply(chat.system, chat.messages.slice(-16));
+    const reply = await OPENAI.getReply(chat.system, chat.messages.slice(-16));
     // insert reply
     await chat.insertMessage(reply.role, reply.content);
 
@@ -83,7 +83,7 @@ const getIdleVideo = async (req, res) => {
         res.status(404).json({ message: "You haven't chosen partner yet" });
       }
       if (!image.videoURL) {
-        image.videoURL = await getIdleVideoURL(image.videoId);
+        image.videoURL = await DID.getIdleVideoURL(image.videoId);
         await image.save();
       }
       res.status(200).json({ videoURL: image.videoURL });

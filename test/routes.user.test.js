@@ -1,120 +1,262 @@
 process.env.NODE_ENV === "development";
 
-require("dotenv").config();
+const User = require("../models/user");
+const Partner = require("../models/partner");
 
-const sinon = require("sinon")
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
+const sinon = require("sinon")
+
 const app = require("../app");
-require("../utils/test-setup");
-const dId = require("../utils/d-id");
-
-
-const testUser = {
-  username: "testUser",
-  password: "testpassword",
-  email: "testUser@example.com",
-};
-
-const usersForRegister = [
-  {
-    data: {
-      username: "test_1",
-      email: "test_1@example.com",
-      password: "test_1",
-    },
-    expectedStatus: 201,
-    expectedMessage: "User created",
-  },
-  {
-    data: {
-      username: "test_1",
-      email: "test_2@example.com",
-      password: "test_1",
-    },
-    expectedStatus: 409,
-    expectedMessage: "User already exists",
-  },
-];
-
+const jwt = require("jsonwebtoken");
 
 describe("POST /user/register", () => {
-  for (let user of usersForRegister) {
-    it("should return the expected response if user is created successfully or failed", async () => {
-      const res = await request(app).post("/user/register").send(user.data);
-      expect(res.status).to.equal(user.expectedStatus);
-      expect(res.body.message).to.equal(user.expectedMessage);
-    });
-  }
-});
+  let findOneStub;
+  let saveStub;
 
-const usersForLogin = [
-  {
-    data: {
-      username: "wrongTestUser",
+  beforeEach(() => {
+    findOneStub = sinon.stub(User, "findOne");
+    saveStub = sinon.stub(User.prototype, "save");
+  });
+
+  // Restore the stubs after each test
+  afterEach(() => {
+    findOneStub.restore();
+    saveStub.restore();
+  });
+
+  it("should create a new user if user does not exist", async () => {
+    const userData = {
+      username: "testuser",
+      email: "test@example.com",
+      password: "password",
+    };
+
+    // Simulate user does not exist
+    findOneStub.resolves(null);
+    // Simulate successful save
+    saveStub.resolves();
+
+    // Send a POST request to register User
+    const response = await request(app)
+      .post("/user/register")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(201);
+    expect(response.body.message).to.equal("User created");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.calledOnce(saveStub);
+  });
+
+  it("should return an error if user already exists", async () => {
+    const userData = {
+      username: "testuser",
+      email: "test@example.com",
+      password: "password",
+    };
+
+    // Simulate user already exists
+    findOneStub.resolves({ username: "testuser" });
+
+    // Send a POST request to register User
+    const response = await request(app)
+      .post("/user/register")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("User already exists");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(saveStub);
+  });
+
+  it("should return err.name + err.message if err.name is not empty", async () => {
+    const userData = {
+      username: "testuser",
+      email: "testuser@example.com",
       password: "testpassword",
-    },
-    expectedStatus: 409,
-    expectedMessage: "User not found",
-  },
-  {
-    data: {
-      username: "testUser",
-      password: "wrongtestpassword",
-    },
-    expectedStatus: 409,
-    expectedMessage: "Password incorrect",
-  },
-];
+    };
 
-describe("POST /user/login", () => {
-  for (let user of usersForLogin) {
-    it("should return the expected response if login failed", async () => {
-      const res = await request(app).post("/user/login").send(user.data);
-      expect(res.status).to.equal(user.expectedStatus);
-      expect(res.body.message).to.equal(user.expectedMessage);
+    findOneStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
     });
-  }
 
-  it("should return 200 and JWT on successful login", async () => {
-    const res = await request(app)
-      .post("/user/login")
-      .send({
-        username: testUser.username,
-        password: testUser.password
-      })
-      .set("authorization", jwtTokenForTest);
-    expect(res.status).to.equal(200);
-    expect(res.body).to.have.property("authorization");
+    // Send a POST request to register User
+    const response = await request(app)
+      .post("/user/register")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(saveStub);
   });
 });
 
-const testPartner = {
-  name: "testPartner",
-};
+describe("POST /user/login", () => {
+  let findOneStub;
+  let signStub;
 
-// describe("POST /user/partner", () => {
-//   it("should return 201 and create a partner with idle video URL", async () => {
+  // Set up stubs before each test
+  beforeEach(() => {
+    findOneStub = sinon.stub(User, "findOne");
+    signStub = sinon.stub(jwt, "sign");
+  });
 
+  // Restore stubs after each test
+  afterEach(() => {
+    findOneStub.restore();
+    signStub.restore();
+  });
 
-//     const partner = await Partner.findOne({ name: testPartner.name });
-//     const image = await Image.findOne({ imgBase64: partner.imageId });
-//     image.videoURL = "test-video-url";
-//     await image.save();
+  it("should generate a JWT token for a valid login", async () => {
+    const userData = {
+      username: "testuser",
+      password: "password",
+    };
 
-//     const getImageStub = sinon.stub(dId, "getIdleVideoURL").resolves({ videoURL: "test-video-url" });
+    // Simulate user found
+    findOneStub.resolves({ username: "testuser" });
 
-//     const res = await request(app)
-//       .post("/user/partner")
-//       .send({
-//         imageId: "Test_Partner",
-//         name: "645201ba7d6edb1ef9314867",
-//       });
-//     expect(res.status).to.equal(201);
-//     expect(res.body.message).to.equal("Partner created");
+    // Stub checkPassword method to always resolve to true
+    findOneStub.resolves({
+      checkPassword: sinon.stub().resolves(true)
+    });
 
-//     getImageStub.restore();
-//   });
-// });
+    // Stub the sign method to return a fake token
+    signStub.returns("fakeToken");
 
+    // Send a request to the login endpoint
+    const response = await request(app)
+      .post("/user/login")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body).to.have.property("authorization");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.calledOnce(signStub);
+  });
+  it("should return an error if the user is not found", async () => {
+    // Prepare test data
+    const userData = {
+      username: "testuser",
+      password: "password",
+    };
+
+    // Simulate user not found
+    findOneStub.resolves(null);
+
+    // Send a request to the login endpoint
+    const response = await request(app)
+      .post("/user/login")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("User not found");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
+  });
+
+  it("should return an error if the password is incorrect", async () => {
+    // Prepare test data
+    const userData = {
+      username: "testuser",
+      password: "password",
+    };
+
+    // Simulate user found
+    findOneStub.resolves({ username: "testuser" });
+
+    // Stub checkPassword method to always resolve to false
+    findOneStub.resolves({
+      checkPassword: sinon.stub().resolves(false)
+    });
+
+    // Send a request to the login endpoint
+    const response = await request(app)
+      .post("/user/login")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("Password incorrect");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
+  });
+
+  it("should return an error if an exception is thrown", async () => {
+    // Prepare test data
+    const userData = {
+      username: "testuser",
+      password: "password",
+    };
+
+    // Simulate a database error
+    findOneStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
+
+    // Send a request to the login endpoint
+    const response = await request(app)
+      .post("/user/login")
+      .send(userData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(signStub);
+  });
+});
+
+describe("Get /user/status", () => {
+  let verifyStub;
+  let findOneStub;
+
+  // Set up stubs before each test
+  beforeEach(() => {
+    // Stub the JWT verification function
+    verifyStub = sinon.stub(jwt, "verify");
+
+    // Stub the findOne method of the Partner model
+    findOneStub = sinon.stub(Partner, "findOne")
+  });
+
+  // Restore stubs after each test
+  afterEach(() => {
+    verifyStub.restore();
+    findOneStub.restore();
+  });
+
+  it("should return user status as false if no partner exists", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Stub Partner.findOne to return null (no partner exists)
+    findOneStub.resolves(null);
+
+    const response = await request(app)
+      .get("/user/status")
+      .set("Authorization", "jwtToken");
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body.userInfo.status).to.equal(false);
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findOneStub);
+  });
+});

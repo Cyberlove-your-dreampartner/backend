@@ -1,125 +1,350 @@
 process.env.NODE_ENV === "development";
 
+const Partner = require("../models/partner");
+const Image = require("../models/image");
+
 require("dotenv").config();
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
+const sinon = require("sinon")
+
 const app = require("../app");
-const Partner = require("../models/partner");
+const DID = require("../utils/d-id");
+const CLOUDINARY = require("../utils/cloudinary");
+const jwt = require("jsonwebtoken");
 
-require("../utils/test-setup");
 
-
-// const usersForCreatePartner = {
-//   data: {
-//     name: "testPartner",
-//   },
-//   expectedStatus: 201,
-//   expectedMessage: "Partner created"
-// };
-
-// describe("POST /partner/create", () => {
-
-//   it("should create a new partner", async () => {
-//     const response = await request(app)
-//       .post("/partner/create")
-//       .send({"name": usersForCreatePartner.data.name})
-//       .set("authorization", jwtTokenForTest);
-//       expect(response.status).to.equal(usersForCreatePartner.expectedStatus);
-//       expect(response.body.message).to.equal(usersForCreatePartner.expectedMessage);
-
-//     await Partner.findOneAndDelete({ name: usersForCreatePartner.name });
-//   });
-
-// });
 
 
 describe("POST /partner/generateImage", () => {
-  it("should return an array of 4 images or less", async () => {
-    const res = await request(app)
-      .post("/partner/generateImage")
-      .send({
-        "origin": "Japanese",
-        "hair": "straight"
-      })
-      .set("authorization", jwtTokenForTest)
-      .expect(200);
+  let verifyStub;
+  let aggregateStub;
 
-    expect(res.body.images.length).to.be.gte(0);
+  beforeEach(() => {
+    // Stub the JWT verification function
+    verifyStub = sinon.stub(jwt, "verify");
+    aggregateStub = sinon.stub(Image, "aggregate");
+  });
+
+  // Restore the stubs after each test
+  afterEach(() => {
+    verifyStub.restore();
+    aggregateStub.restore();
+  });
+
+  it("should return an array of 4 images based on the query", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+
+    // Define the query parameters for the request
+    const query = {
+      origin: "fakeOrigin",
+      hair: "fakeHair",
+      hairColor: "fakeHairColor",
+      breast: "fakeBreast",
+      glasses: "fakeGlasses",
+    };
+
+    // Define the sample result from the aggregate query
+    const sampleResult = [
+      { _id: "image1", imgBase64: "imageBase641" },
+      { _id: "image2", imgBase64: "imageBase642" },
+      { _id: "image3", imgBase64: "imageBase643" },
+      { _id: "image4", imgBase64: "imageBase644" },
+    ];
+
+    // Stub the aggregate function to return the sample result
+    aggregateStub.resolves(sampleResult);
+
+    // Define the expected response
+    const expectedResponse = {
+      images: [
+        { imageId: "image1", imageBase64: "imageBase641" },
+        { imageId: "image2", imageBase64: "imageBase642" },
+        { imageId: "image3", imageBase64: "imageBase643" },
+        { imageId: "image4", imageBase64: "imageBase644" },
+      ],
+    };
+
+    // Send a POST request to generate Images
+    const response = await request(app)
+      .post("/partner/generateImage")
+      .set("authorization", "jwtToken")
+      .send(query);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal(expectedResponse);
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnceWithExactly(aggregateStub, [
+      { $match: query },
+      { $sample: { size: 6 } },
+      { $project: { _id: 1, imgBase64: 1 } },
+    ]);
+  });
+
+  it("should handle errors and return the appropriate response", async () => {
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Stub the aggregate function to return the sample result
+    aggregateStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
+
+    // Define the query parameters for the request
+    const query = {
+      origin: "fakeOrigin",
+      hair: "fakeHair",
+      hairColor: "fakeHairColor",
+      breast: "fakeBreast",
+      glasses: "fakeGlasses",
+    };
+
+    // Send a POST request to generate Images
+    const response = await request(app)
+      .post("/partner/generateImage")
+      .set("authorization", "jwtToken")
+      .send(query);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body).to.deep.equal({ message: "CustomError Custom error message" });
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnceWithExactly(aggregateStub, [
+      { $match: query },
+      { $sample: { size: 6 } },
+      { $project: { _id: 1, imgBase64: 1 } },
+    ]);
   });
 });
 
-// describe('POST /partner/characterSetting', () => {
-//   it('should update partner and chat', async () => {
-//     const req = {
-//       body: {
-//         nickname: 'Alice',
-//         name: 'Alice Smith',
-//         MBTI: 'INTJ',
-//         job: 'Engineer',
-//         personality: 'Introverted',
-//       }
-//     };
-//     const res = {
-//       status: sinon.stub().returnsThis(),
-//       json: sinon.stub(),
-//     };
+describe("POST /partner/characterSetting", () => {
+  let verifyStub;
+  let findOneStub;
+  let saveStub;
 
-//     const partnerSaveStub = sinon.stub().resolves();
-//     const partnerFindOneStub = sinon.stub(Partner, 'findOne').resolves({
-//       nickname: 'OldNickname',
-//       name: 'OldName',
-//       MBTI: 'OldMBTI',
-//       job: 'OldJob',
-//       personality: 'OldPersonality',
-//       save: partnerSaveStub,
-//     });
+  beforeEach(() => {
+    // Stub the JWT verification function
+    verifyStub = sinon.stub(jwt, "verify");
+    findOneStub = sinon.stub(Partner, "findOne");
+    saveStub = sinon.stub(Partner.prototype, "save");
+  });
 
-//     const chatSaveStub = sinon.stub().resolves();
-//     const chatFindOneStub = sinon.stub(Chat, 'findOne').resolves({
-//       system: 'OldSystem',
-//       save: chatSaveStub,
-//     });
+  // Restore the stubs after each test
+  afterEach(() => {
+    verifyStub.restore();
+    findOneStub.restore();
+    saveStub.restore();
+  });
 
-//     await characterSetting(req, res);
+  it("should return an error if user has not selected a partner", async () => {
 
-//     expect(partnerFindOneStub.calledOnceWithExactly({ userId: req.user._id })).to.be.true;
-//     expect(chatFindOneStub.calledOnceWithExactly({ userId: req.user._id })).to.be.true;
+    // Stub the JWT verification to return an empty userId
+    verifyStub.returns({ userId: "" });
 
-//     expect(partnerSaveStub.calledOnce).to.be.true;
-//     expect(chatSaveStub.calledOnce).to.be.true;
+    const updateData = {
+      nickname: "John",
+      name: "John Doe",
+      MBTI: "INFJ",
+      job: "Engineer",
+      personality: "Introverted",
+    };
 
-//     expect(res.status.calledOnceWithExactly(201)).to.be.true;
-//     expect(res.json.calledOnceWithExactly({ message: 'CharacterSetting success' })).to.be.true;
+    // Send a request without a selected partner
+    const response = await request(app)
+      .post("/partner/characterSetting")
+      .set("authorization", "jwtToken")
+      .send(updateData);
 
-//     partnerFindOneStub.restore();
-//     chatFindOneStub.restore();
-//   });
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("The user has not yet selected a partner");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.notCalled(findOneStub);
+    sinon.assert.notCalled(saveStub);
+  });
 
-//   it('should handle errors', async () => {
-//     const req = {
-//       body: {
-//         // ... request body values ...
-//       },
-//       user: {
-//         _id: 'userId123',
-//       },
-//     };
-//     const res = {
-//       status: sinon.stub().returnsThis(),
-//       json: sinon.stub(),
-//     };
+  it("should update partner and return success message", async () => {
 
-//     sinon.stub(Partner, 'findOne').throws(new Error('Database error'));
-//     sinon.stub(Chat, 'findOne').resolves(null);
+    // Stub the JWT verification to return a fake userId
+    verifyStub.returns({ _id: "fakeUserId" });
 
-//     await characterSetting(req, res);
+    const updateData = {
+      nickname: "John",
+      name: "John Doe",
+      MBTI: "INFJ",
+      job: "Engineer",
+      personality: "Introverted",
+    };
+    // Create a test partner object with empty fields
+    const testpartner = new Partner ({
+      nickname: "",
+      name: "",
+      MBTI: "",
+      job: "",
+      personality: "",
+    });
 
-//     expect(res.status.calledOnceWithExactly(500)).to.be.true;
-//     expect(res.json.calledOnceWithExactly({ message: 'Internal server error' })).to.be.true;
+    // Stub the Partner.findOne and Partner.prototype.save methods
+    findOneStub.resolves(testpartner);
+    saveStub.resolves();
 
-//     Partner.findOne.restore();
-//     Chat.findOne.restore();
-//   });
-// });
+    // Send a request to update the partner
+    const response = await request(app)
+      .post("/partner/characterSetting")
+      .set("authorization", "jwtToken")
+      .send(updateData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(201);
+    expect(response.body.message).to.equal("CharacterSetting success");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.calledOnce(saveStub);
+    sinon.assert.calledWithExactly(saveStub);
+  });
+
+  it("should return an error if an exception is thrown", async () => {
+
+    // Stub the JWT verification to return a fake userId
+    verifyStub.returns({ _id: "fakeUserId" });
+    const updateData = {
+      nickname: "John",
+      name: "John Doe",
+      MBTI: "INFJ",
+      job: "Engineer",
+      personality: "Introverted",
+    };
+
+    // Simulate a database error by throwing a custom error
+    findOneStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
+
+    // Send a request to update the partner
+    const response = await request(app)
+      .post("/partner/characterSetting")
+      .set("authorization", "jwtToken")
+      .send(updateData);
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.notCalled(saveStub);
+  });
+});
+
+describe("POST /partner/", () => {
+  let verifyStub;
+  let createPartnerStub;
+  let findImageStub;
+  let createIdleVideoStub;
+  let getIdleVideoURLStub;
+  let uploadVideoStub;
+
+  // Set up stubs before each test
+  beforeEach(() => {
+    // Stub the JWT verification function
+    verifyStub = sinon.stub(jwt, "verify");
+
+    // Stub the save method of the Partner model
+    createPartnerStub = sinon.stub(Partner.prototype, "save");
+
+    // Stub the findById method of the Image model
+    findImageStub = sinon.stub(Image, "findById");
+
+    // Stub the createIdleVideo function
+    createIdleVideoStub = sinon.stub(DID, "createIdleVideo");
+
+    // Stub the getIdleVideoURL function
+    getIdleVideoURLStub = sinon.stub(DID, "getIdleVideoURL");
+
+    // Stub the getIdleVideoURL function
+    uploadVideoStub = sinon.stub(CLOUDINARY, "uploadVideo");
+  });
+
+  // Restore stubs after each test
+  afterEach(() => {
+    verifyStub.restore();
+    createPartnerStub.restore();
+    findImageStub.restore();
+    createIdleVideoStub.restore();
+    getIdleVideoURLStub.restore();
+    uploadVideoStub.restore();
+  });
+
+  it("should create a partner and return a success message", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    createPartnerStub.resolves();
+    findImageStub.resolves({ videoURL: "" });
+    createIdleVideoStub.resolves("fakeVideoId");
+    getIdleVideoURLStub.resolves("fakeVideoURL");
+    uploadVideoStub.resolves("fakeUploadedVideoURL")
+    // Stub the save method of the Image model
+    findImageStub.resolves({
+      save: sinon.stub().resolves(true)
+    });
+
+    // Send a POST request to create a partner
+    const response = await request(app)
+      .post("/partner/")
+      .set("authorization", "jwtToken")
+      .send({
+        name: "Partner Name",
+        imageId: "fakeImageId",
+      });
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(201);
+    expect(response.body.message).to.equal("Partner created");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(createPartnerStub);
+    sinon.assert.calledOnce(findImageStub);
+    sinon.assert.calledOnce(createIdleVideoStub);
+    sinon.assert.calledOnce(getIdleVideoURLStub);
+    sinon.assert.calledOnce(uploadVideoStub);
+  });
+
+  it("should return an error if an exception is thrown", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    createPartnerStub.resolves();
+    // Simulate a database error by throwing a custom error
+    findImageStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
+
+    // Send a POST request to create a partner
+    const response = await request(app)
+      .post("/partner/")
+      .set("authorization", "jwtToken")
+      .send({
+        name: "Partner Name",
+        imageId: "fakeImageId",
+      });
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(createPartnerStub);
+    sinon.assert.calledOnce(findImageStub);
+    sinon.assert.notCalled(createIdleVideoStub);
+    sinon.assert.notCalled(getIdleVideoURLStub);
+    sinon.assert.notCalled(uploadVideoStub);
+  });
+});
