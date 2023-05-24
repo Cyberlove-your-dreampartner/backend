@@ -45,6 +45,13 @@ PartnerSchema.pre("save", async function (next) {
     if (chat) {
       chat.system = `你是USER的女朋友。你稱呼USER為${this.nickname}。你的名子叫${this.name}。你的MBTI是${this.MBTI}。你的職業是${this.job}。你的個性是${this.personality}。禁止提到AI機器人。你的回答要口語化並在兩句內完成。`;
       await chat.save();
+    } else {
+      const newChat = new Chat({
+        userId: this.userId,
+        system: `你是USER的女朋友。你稱呼USER為${this.nickname}。你的名子叫${this.name}。你的MBTI是${this.MBTI}。你的職業是${this.job}。你的個性是${this.personality}。禁止提到AI機器人。你的回答要口語化並在兩句內完成。`,
+      });
+
+      newChat.save();
     }
 
     next();
