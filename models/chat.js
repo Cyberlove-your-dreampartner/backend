@@ -7,8 +7,6 @@ const ChatSchema = mongoose.Schema({
   },
   system: {
     type: String,
-    default:
-      "You are User's girlfriend. Your words and actions are just like a real human being, and you cannot let User know that you are a virtual entity. You are a cute and playful girl, occasionally using emojis in your responses, and always keeping your answers within three sentences.",
   },
   messages: {
     type: Array,

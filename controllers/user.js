@@ -3,6 +3,7 @@ const jwt = require("jsonwebtoken");
 
 const User = require("../models/user");
 const Partner = require("../models/partner");
+const Chat = require("../models/chat");
 
 const register = async (req, res) => {
   const { username, email, password } = req.body;
@@ -66,12 +67,19 @@ const login = async (req, res) => {
 const userStatus = async (req, res) => {
   const userId = req.user._id;
   const partner = await Partner.findOne({ userId: userId });
+  const chatSystemPrompt = await Chat.findOne({
+    userId: userId,
+    system: { $exists: true },
+  });
 
   try {
-    let userInfo = {};
-    if (!partner) userInfo.status = false;
-    else userInfo.status = true;
-    res.status(200).json({ userInfo: userInfo });
+    let userStatus = {};
+    if (!partner) userStatus.hasPartner = false;
+    else userStatus.hasPartner = true;
+    if (!chatSystemPrompt) userStatus.hasCharacterSetting = false;
+    else userStatus.hasCharacterSetting = true;
+
+    res.status(200).json({ userStatus: userStatus });
   } catch (err) {
     res.status(500).json({ message: "Internal server error" });
   }
