@@ -23,6 +23,9 @@ const getCredit = async () => {
 getCredit();
 
 const createIdleVideo = async (imgURL) => {
+  // generate 15 "abc"
+  const breakTime = '<break time="1000ms"/>';
+  const input = breakTime.repeat(15);
   const options = {
     method: "POST",
     headers: {
@@ -34,10 +37,10 @@ const createIdleVideo = async (imgURL) => {
       script: {
         type: "text",
         ssml: true,
-        input: '<break time="15000ms"/>',
+        input: input,
       },
       source_url: imgURL,
-    }),
+  }),
   };
   const res = await fetch(`${process.env.DID_URL}/talks`, options);
   if (!res.ok) {
@@ -56,13 +59,18 @@ const getIdleVideoURL = async (videoId) => {
       authorization: `Basic ${process.env.DID_API_KEY}`,
     },
   };
-
-  const res = await fetch(`${process.env.DID_URL}/talks/${videoId}`, options);
-  if (!res.ok) {
-    throw new Error("Failed to get idle video URL");
+  let videoURL = "";
+  while (true) {
+    const res = await fetch(`${process.env.DID_URL}/talks/${videoId}`, options);
+    if (!res.ok) {
+      throw new Error("Failed to get idle video URL");
+    }
+    const data = await res.json();
+    if (data.status === "done") {
+      videoURL = data.result_url;
+      break;
+    }
   }
-  const data = await res.json();
-  const videoURL = data.result_url;
   return videoURL;
 };
 
