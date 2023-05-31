@@ -39,8 +39,11 @@ const createIdleVideo = async (imgURL) => {
         ssml: true,
         input: input,
       },
+      config: {
+        stitch: true,
+      },
       source_url: imgURL,
-  }),
+    }),
   };
   const res = await fetch(`${process.env.DID_URL}/talks`, options);
   if (!res.ok) {
