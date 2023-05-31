@@ -2,6 +2,7 @@ process.env.NODE_ENV === "development";
 
 const User = require("../models/user");
 const Partner = require("../models/partner");
+const Chat = require("../models/chat");
 
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
@@ -225,38 +226,125 @@ describe("POST /user/login", () => {
 
 describe("Get /user/status", () => {
   let verifyStub;
-  let findOneStub;
+  let findPartnerStub;
+  let findChatStub;
 
   // Set up stubs before each test
   beforeEach(() => {
+    // Remove the existing stubs or wraps before creating new ones
+    sinon.restore();
     // Stub the JWT verification function
     verifyStub = sinon.stub(jwt, "verify");
-
     // Stub the findOne method of the Partner model
-    findOneStub = sinon.stub(Partner, "findOne")
+    findPartnerStub = sinon.stub(Partner, "findOne")
+    // Stub the findOne method of the Chat model
+    findChatStub = sinon.stub(Chat, "findOne")
   });
 
   // Restore stubs after each test
   afterEach(() => {
     verifyStub.restore();
-    findOneStub.restore();
+    findPartnerStub.restore();
+    findChatStub.restore();
   });
 
-  it("should return user status as false if no partner exists", async () => {
+  it("should return the user status with hasPartner as false if partner is not found and with hasCharacterSetting as false if chatSystemPrompt is not found", async () => {
 
     verifyStub.returns({ userId: "fakeUserId" });
     // Stub Partner.findOne to return null (no partner exists)
-    findOneStub.resolves(null);
+    findPartnerStub.resolves(null);
+    findChatStub.resolves();
 
     const response = await request(app)
       .get("/user/status")
-      .set("Authorization", "jwtToken");
+      .set("authorization", "jwtToken");
 
     // Perform assertions on the response
     expect(response.status).to.equal(200);
-    expect(response.body.userInfo.status).to.equal(false);
+    expect(response.body).to.deep.equal({
+      userStatus: {
+        hasPartner: false,
+        hasCharacterSetting: false,
+      },
+    });
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
-    sinon.assert.calledOnce(findOneStub);
+    sinon.assert.calledOnce(findPartnerStub);
+    sinon.assert.calledOnce(findChatStub);
+  });
+
+  it("should return the user status with hasPartner as true if partner is found and with hasCharacterSetting as false if chatSystemPrompt is not found", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Stub Partner.findOne to return a partner
+    findPartnerStub.resolves({ userId: "fakeUserId" });
+    findChatStub.resolves();
+
+    const response = await request(app)
+      .get("/user/status")
+      .set("authorization", "jwtToken");
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      userStatus: {
+        hasPartner: true,
+        hasCharacterSetting: false,
+      },
+    });
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findPartnerStub);
+    sinon.assert.calledOnce(findChatStub);
+  });
+
+  it("should return the user status with hasPartner as false if partner is not found and with hasCharacterSetting as false if chatSystemPrompt is not found", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Stub Partner.findOne to return a partner
+    findPartnerStub.resolves({ userId: "fakeUserId" });
+    findChatStub.resolves({ userId: "fakeUserId" });
+
+    const response = await request(app)
+      .get("/user/status")
+      .set("authorization", "jwtToken");
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      userStatus: {
+        hasPartner: true,
+        hasCharacterSetting: true,
+      },
+    });
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findPartnerStub);
+    sinon.assert.calledOnce(findChatStub);
+  });
+
+  it("should return the user status with hasPartner as false if partner is not found and with hasCharacterSetting as false if chatSystemPrompt is not found", async () => {
+
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Stub Partner.findOne to return null (no partner exists)
+    findPartnerStub.resolves(null);
+    findChatStub.resolves({ userId: "fakeUserId" });
+
+    const response = await request(app)
+      .get("/user/status")
+      .set("authorization", "jwtToken");
+
+    // Perform assertions on the response
+    expect(response.status).to.equal(200);
+    expect(response.body).to.deep.equal({
+      userStatus: {
+        hasPartner: false,
+        hasCharacterSetting: true,
+      },
+    });
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(findPartnerStub);
+    sinon.assert.calledOnce(findChatStub);
   });
 });
