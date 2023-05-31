@@ -4,6 +4,7 @@ const Image = require("../models/image");
 
 const DID = require("../utils/d-id");
 const CLOUDINARY = require("../utils/cloudinary");
+const IMGUR = require("../utils/imgur");
 
 // get img from ../img/
 
@@ -95,7 +96,7 @@ const uploadImage = async (req, res) => {
 
   try {
     // upload image to cloudinary
-    const imgURL = await CLOUDINARY.uploadImage(imageBase64);
+    const imgURL = await IMGUR.uploadImg(imageBase64);
     // insert a new image
     const newImage = new Image({
       userId,
