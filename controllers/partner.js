@@ -79,6 +79,43 @@ const choosePartner = async (req, res) => {
   const userId = req.user._id;
 
   try {
+    await addPartner(imageId, userId);
+    res.status(201).json({ message: "Partner created" });
+  } catch (err) {
+    console.log(err);
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
+  }
+};
+
+const uploadImage = async (req, res) => {
+  const { imageBase64 } = req.body;
+  const userId = req.user._id;
+
+  try {
+    // upload image to cloudinary
+    const imgURL = await CLOUDINARY.uploadImage(imageBase64);
+    // insert a new image
+    const newImage = new Image({
+      userId,
+      imgURL,
+      imgBase64: imageBase64,
+    });
+    await newImage.save();
+    const imageId = newImage._id;
+    await addPartner(imageId, userId);
+    res.status(201).json({ message: "Image created" });
+  } catch (err) {
+    console.log(err);
+    if (err.name === undefined || err.name === "")
+      res.status(500).json({ message: "Internal server error" });
+    else res.status(409).json({ message: err.name + " " + err.message });
+  }
+};
+
+const addPartner = async (imageId, userId) => {
+  try {
     // insert a new partner
     const newPartner = new Partner({
       userId,
@@ -92,13 +129,14 @@ const choosePartner = async (req, res) => {
       image.videoURL = await CLOUDINARY.uploadVideo(didVideoURL);
       await image.save();
     }
-    res.status(201).json({ message: "Partner created" });
   } catch (err) {
     console.log(err);
-    if (err.name === undefined || err.name === "")
-      res.status(500).json({ message: "Internal server error" });
-    else res.status(409).json({ message: err.name + " " + err.message });
+    throw new Error("Failed to add partner");
   }
 };
-
-module.exports = { generatePartnerImage, characterSetting, choosePartner };
+module.exports = {
+  generatePartnerImage,
+  characterSetting,
+  choosePartner,
+  uploadImage,
+};

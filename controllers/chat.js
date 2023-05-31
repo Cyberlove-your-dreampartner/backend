@@ -14,7 +14,6 @@ const getImgURL = async (req, res) => {
       res.status(404).json({ message: "Partner not found" });
     } else {
       const image = await Image.findOne({ _id: partner.imageId });
-      console.log(image);
       res.status(200).json({ imgURL: image.imgURL });
     }
   } catch (err) {
