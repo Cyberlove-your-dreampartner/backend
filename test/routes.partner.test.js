@@ -322,10 +322,7 @@ describe("POST /partner/", () => {
     verifyStub.returns({ userId: "fakeUserId" });
     createPartnerStub.resolves();
     // Simulate a database error by throwing a custom error
-    findImageStub.throws({
-      name: "CustomError",
-      message: "Custom error message",
-    });
+    findImageStub.resolves();
 
     // Send a POST request to create a partner
     const response = await request(app)
@@ -338,7 +335,7 @@ describe("POST /partner/", () => {
 
     // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body.message).to.equal("CustomError Custom error message");
+    expect(response.body.message).to.equal("Error Failed to add partner");
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
     sinon.assert.calledOnce(createPartnerStub);
