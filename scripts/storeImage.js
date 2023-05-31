@@ -10,9 +10,6 @@ const dirPath = process.argv[2];
 if(process.env.NODE_ENV !== "development") {
   mongoose.connect(process.env.MONGODB_URL);
 }
-else{
-  mongoose.connect(process.env.MONGODB_TEST_URL);
-}
 
 const bar = new ProgressBar("store images [:bar] :percent :etas", {
   complete: "=",
