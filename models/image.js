@@ -14,25 +14,14 @@ const ImageSchema = mongoose.Schema({
   videoURL: {
     type: String,
   },
-  // {Japanese | Korean | Chinese | European}
   origin: {
     type: String,
   },
-  // {straight | curly | pigtails}
   hair: {
     type: String,
   },
-  // {red | blond | brown | blue | green | pink | white | black | purple}
   hairColor: {
     type: String,
-  },
-  // {micromastia | large breast}
-  breast: {
-    type: String,
-  },
-  // {with glasses | }
-  glasses: {
-    type: Boolean,
   },
 });
 
