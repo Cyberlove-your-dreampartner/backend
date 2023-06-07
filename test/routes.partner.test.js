@@ -16,7 +16,7 @@ const jwt = require("jsonwebtoken");
 const DID = require("../utils/d-id");
 const CLOUDINARY = require("../utils/cloudinary");
 const IMGUR = require("../utils/imgur");
-
+const ADDPARTNER = require("../utils/addpartner");
 
 
 describe("POST /partner/generateImage", () => {
@@ -243,55 +243,28 @@ describe("POST /partner/characterSetting", () => {
 
 describe("POST /partner/", () => {
   let verifyStub;
-  let createPartnerStub;
-  let findImageStub;
-  let createIdleVideoStub;
-  let getIdleVideoURLStub;
-  let uploadVideoStub;
+  let addPartnerStub;
+
 
   // Set up stubs before each test
   beforeEach(() => {
     // Stub the JWT verification function
     verifyStub = sinon.stub(jwt, "verify");
-
-    // Stub the save method of the Partner model
-    createPartnerStub = sinon.stub(Partner.prototype, "save");
-
-    // Stub the findById method of the Image model
-    findImageStub = sinon.stub(Image, "findById");
-
-    // Stub the createIdleVideo function
-    createIdleVideoStub = sinon.stub(DID, "createIdleVideo");
-
-    // Stub the getIdleVideoURL function
-    getIdleVideoURLStub = sinon.stub(DID, "getIdleVideoURL");
-
-    // Stub the getIdleVideoURL function
-    uploadVideoStub = sinon.stub(CLOUDINARY, "uploadVideo");
+    addPartnerStub = sinon.stub(ADDPARTNER, 'addPartner');
   });
 
   // Restore stubs after each test
   afterEach(() => {
     verifyStub.restore();
-    createPartnerStub.restore();
-    findImageStub.restore();
-    createIdleVideoStub.restore();
-    getIdleVideoURLStub.restore();
-    uploadVideoStub.restore();
+    addPartnerStub.restore();
   });
 
   it("should create a partner and return a success message", async () => {
 
     verifyStub.returns({ userId: "fakeUserId" });
-    createPartnerStub.resolves();
-    findImageStub.resolves({ videoURL: "" });
-    createIdleVideoStub.resolves("fakeVideoId");
-    getIdleVideoURLStub.resolves("fakeVideoURL");
-    uploadVideoStub.resolves("fakeUploadedVideoURL")
-    // Stub the save method of the Image model
-    findImageStub.resolves({
-      save: sinon.stub().resolves(true)
-    });
+
+    // Simulate successful partner creation
+    addPartnerStub.resolves();
 
     // Send a POST request to create a partner
     const response = await request(app)
@@ -307,19 +280,16 @@ describe("POST /partner/", () => {
     expect(response.body.message).to.equal("Partner created");
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
-    sinon.assert.calledOnce(createPartnerStub);
-    sinon.assert.calledOnce(findImageStub);
-    sinon.assert.calledOnce(createIdleVideoStub);
-    sinon.assert.calledOnce(getIdleVideoURLStub);
-    sinon.assert.calledOnce(uploadVideoStub);
+    sinon.assert.calledOnce(addPartnerStub);
   });
 
   it("should return an error if an exception is thrown", async () => {
 
     verifyStub.returns({ userId: "fakeUserId" });
-    createPartnerStub.resolves();
-    // Simulate a database error by throwing a custom error
-    findImageStub.resolves();
+    addPartnerStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
 
     // Send a POST request to create a partner
     const response = await request(app)
@@ -332,118 +302,78 @@ describe("POST /partner/", () => {
 
     // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body.message).to.equal("Error Failed to add partner");
+    expect(response.body.message).to.equal("CustomError Custom error message");
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
-    sinon.assert.calledOnce(createPartnerStub);
-    sinon.assert.calledOnce(findImageStub);
-    sinon.assert.notCalled(createIdleVideoStub);
-    sinon.assert.notCalled(getIdleVideoURLStub);
-    sinon.assert.notCalled(uploadVideoStub);
+    sinon.assert.calledOnce(addPartnerStub);
   });
 });
 
-// describe("POST /partner/image", () => {
-//   let verifyStub;
-//   let uploadImgStub;
-//   let saveImageStub;
-//   let addPartnerStub;
+describe("POST /partner/image", () => {
+  let verifyStub;
+  let uploadImgStub;
+  let saveImageStub;
+  let addPartnerStub;
 
-//   beforeEach(() => {
-//     // Stub the JWT verification function
-//     verifyStub = sinon.stub(jwt, "verify");
-//     uploadImgStub = sinon.stub(IMGUR, "uploadImg");
-//     saveImageStub = sinon.stub(Image.prototype, "save");
-//     addPartnerStub = sinon.stub(addPartner);
-//   });
+  beforeEach(() => {
+    // Stub the JWT verification function
+    verifyStub = sinon.stub(jwt, "verify");
+    uploadImgStub = sinon.stub(IMGUR, "uploadImg");
+    saveImageStub = sinon.stub(Image.prototype, "save");
+    addPartnerStub = sinon.stub(ADDPARTNER, 'addPartner');
+  });
 
-//   afterEach(() => {
-//     verifyStub.restore();
-//     uploadImgStub.restore();
-//     saveImageStub.restore();
-//     addPartnerStub.restore();
-//   });
+  afterEach(() => {
+    verifyStub.restore();
+    uploadImgStub.restore();
+    saveImageStub.restore();
+    addPartnerStub.restore();
+  });
 
-//   it("should upload an image and create a new record in the database", async () => {
+  it("should upload an image and create a new record in the database", async () => {
 
-//     verifyStub.returns({ userId: "fakeUserId" });
-//     uploadImgStub.resolves("fakeImgURL");
-//     saveImageStub.resolves();
-//     addPartnerStub.resolves();
+    verifyStub.returns({ userId: "fakeUserId" });
+    uploadImgStub.resolves("fakeImgURL");
+    saveImageStub.resolves();
+    addPartnerStub.resolves();
 
-//     const response = await request(app)
-//       .post("/image/upload")
-//       .set("authorization", "jwtToken")
-//       .send({
-//         imageBase64: "base64EncodedImage",
-//       });
+    const response = await request(app)
+      .post("/partner/image")
+      .set("authorization", "jwtToken")
+      .send({
+        imageBase64: "base64EncodedImage",
+      });
 
-//     expect(response.status).to.equal(201);
-//     expect(response.body.message).to.equal("Image created");
-//     // Verify the function calls and stub invocations
-//     sinon.assert.calledOnce(verifyStub);
-//     sinon.assert.calledOnce(uploadImgStub);
-//     sinon.assert.calledOnce(saveImageStub);
-//     sinon.assert.calledOnce(addPartnerStub);
-//   });
+    expect(response.status).to.equal(201);
+    expect(response.body.message).to.equal("Image created");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(uploadImgStub);
+    sinon.assert.calledOnce(saveImageStub);
+    sinon.assert.calledOnce(addPartnerStub);
+  });
 
-//   it("should handle errors during image upload", async () => {
-//     const imageData = {
-//       imageBase64: "base64EncodedImage",
-//     };
+  it("should handle errors during image upload", async () => {
+    verifyStub.returns({ userId: "fakeUserId" });
+    // Simulate image upload error
+    uploadImgStub.throws({
+      name: "CustomError",
+      message: "Custom error message",
+    });
 
-//     uploadImgStub.rejects(new Error("Image upload failed")); // Simulate image upload error
+    const response = await request(app)
+      .post("/partner/image")
+      .set("authorization", "jwtToken")
+      .send({
+        imageBase64: "base64EncodedImage",
+      });
 
-//     const response = await request(app)
-//       .post("/image/upload")
-//       .set("authorization", "fakeToken")
-//       .send(imageData);
-
-//     expect(response.status).to.equal(500);
-//     expect(response.body.message).to.equal("Internal server error");
-//     sinon.assert.calledOnce(uploadImgStub);
-//     sinon.assert.notCalled(saveImageStub);
-//     sinon.assert.notCalled(addPartnerStub);
-//   });
-
-//   it("should handle errors during database save", async () => {
-//     const imageData = {
-//       imageBase64: "base64EncodedImage",
-//     };
-
-//     uploadImgStub.resolves("fakeImgURL"); // Simulate successful image upload
-//     saveImageStub.rejects(new Error("Database save failed")); // Simulate save error
-
-//     const response = await request(app)
-//       .post("/image/upload")
-//       .set("authorization", "fakeToken")
-//       .send(imageData);
-
-//     expect(response.status).to.equal(500);
-//     expect(response.body.message).to.equal("Internal server error");
-//     sinon.assert.calledOnce(uploadImgStub);
-//     sinon.assert.calledOnce(saveImageStub);
-//     sinon.assert.notCalled(addPartnerStub);
-//   });
-
-//   it("should handle errors during addPartner call", async () => {
-//     const imageData = {
-//       imageBase64: "base64EncodedImage",
-//     };
-
-//     uploadImgStub.resolves("fakeImgURL"); // Simulate successful image upload
-//     saveImageStub.resolves(); // Simulate successful save
-//     addPartnerStub.rejects(new Error("Add partner failed")); // Simulate addPartner error
-
-//     const response = await request(app)
-//       .post("/image/upload")
-//       .set("authorization", "fakeToken")
-//       .send(imageData);
-
-//     expect(response.status).to.equal(409);
-//     expect(response.body.message).to.equal("Error Add partner failed");
-//     sinon.assert.calledOnce(uploadImgStub);
-//     sinon.assert.calledOnce(saveImageStub);
-//     sinon.assert.calledOnce(addPartnerStub);
-//   });
-// });
+    expect(response.status).to.equal(409);
+    expect(response.body.message).to.equal("CustomError Custom error message");
+    // Verify the function calls and stub invocations
+    sinon.assert.calledOnce(verifyStub);
+    sinon.assert.calledOnce(uploadImgStub);
+    sinon.assert.notCalled(saveImageStub);
+    sinon.assert.notCalled(addPartnerStub);
+  });
+});
