@@ -18,8 +18,6 @@ const generatePartnerImage = async (req, res) => {
     if (origin) query.origin = origin;
     if (hair) query.hair = hair;
     if (hairColor) query.hairColor = hairColor;
-    if (breast) query.breast = breast;
-    if (glasses) query.glasses = glasses;
 
     // random find 4 images in db
     let images = await Image.aggregate([
