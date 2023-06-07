@@ -1,9 +1,6 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
-// if (process.env.NODE_ENV === "development") {
-//   const fetch = require("node-fetch");
-// }
-// for test
+
 const getCredit = async () => {
   const options = {
     method: "GET",
