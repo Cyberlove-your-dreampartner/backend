@@ -8,7 +8,6 @@ const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
 const sinon = require("sinon");
-const proxyquire = require("proxyquire");
 
 const app = require("../app");
 const jwt = require("jsonwebtoken");

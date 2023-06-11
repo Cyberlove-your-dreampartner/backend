@@ -2,15 +2,13 @@ require("dotenv").config();
 const Partner = require("../models/partner");
 const Image = require("../models/image");
 
-const DID = require("../utils/d-id");
-const CLOUDINARY = require("../utils/cloudinary");
 const IMGUR = require("../utils/imgur");
 const ADDPARTNER = require("../utils/addpartner");
 
 // get img from ../img/
 
 const generatePartnerImage = async (req, res) => {
-  const { origin, hair, hairColor, breast, glasses } = req.body;
+  const { origin, hair, hairColor } = req.body;
 
   try {
     // origin, hair, hairColor, breast, glasses are optional, check if they are undefined
@@ -113,7 +111,6 @@ const uploadImage = async (req, res) => {
     else res.status(409).json({ message: err.name + " " + err.message });
   }
 };
-
 
 module.exports = {
   generatePartnerImage,
