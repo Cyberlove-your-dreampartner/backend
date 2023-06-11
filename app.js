@@ -25,12 +25,10 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(cors());
 
 // mongoose
-if(process.env.NODE_ENV !== "development") {
+if (process.env.NODE_ENV !== "development") {
   mongoose.connect(process.env.MONGODB_URL);
   console.log("Connected to MongoDB");
 }
-
-
 
 app.use("/user", userRouter);
 app.use("/chat", chatRouter);
@@ -42,7 +40,7 @@ app.use(function (req, res, next) {
 });
 
 // error handler
-app.use(function (err, req, res, next) {
+app.use(function (err, req, res) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get("env") === "development" ? err : {};

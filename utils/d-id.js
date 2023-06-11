@@ -60,6 +60,7 @@ const getIdleVideoURL = async (videoId) => {
     },
   };
   let videoURL = "";
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const res = await fetch(`${process.env.DID_URL}/talks/${videoId}`, options);
     if (!res.ok) {

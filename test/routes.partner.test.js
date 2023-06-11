@@ -13,8 +13,6 @@ const sinon = require("sinon")
 const app = require("../app");
 const jwt = require("jsonwebtoken");
 
-const DID = require("../utils/d-id");
-const CLOUDINARY = require("../utils/cloudinary");
 const IMGUR = require("../utils/imgur");
 const ADDPARTNER = require("../utils/addpartner");
 
