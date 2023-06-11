@@ -21,19 +21,18 @@ const bar = new ProgressBar("store images [:bar] :percent :etas", {
 const storeImage = async () => {
   try {
     // iterate through all images in the folder
-    origin = ["Japanese", "Korean", "Chinese", "European"];
-    hair = ["straight", "twintails", "short"];
-    hairColor = ["red", "blond", "brown", "pink", "white", "purple"];
-    const n = origin.length + hair.length + hairColor.length;
+    const origin = ["Japanese", "Korean", "Chinese", "European"];
+    const hair = ["straight", "twintails", "short"];
+    const hairColor = ["red", "blond", "brown", "pink", "white", "purple"];
     // iterate through all images in the folder
     for (const file of fs.readdirSync(dirPath)) {
       let index = file.split("-")[0];
       index = Number(index) - 1;
-      idxHairColor = index % hairColor.length;
+      let idxHairColor = index % hairColor.length;
       index = Math.floor(index / hairColor.length);
-      idxHair = index % hair.length;
+      let idxHair = index % hair.length;
       index = Math.floor(index / hair.length);
-      idxOrigin = index % origin.length;
+      let idxOrigin = index % origin.length;
       const imgBase64 = fs.readFileSync(path.join(dirPath, file), "base64");
       // create a new image
       const newImage = await new Image({
