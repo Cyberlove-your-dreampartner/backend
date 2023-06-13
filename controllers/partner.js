@@ -3,7 +3,7 @@ const Partner = require("../models/partner");
 const Image = require("../models/image");
 
 const IMGUR = require("../utils/imgur");
-const ADDPARTNER = require("../utils/addpartner");
+const ADDPARTNER = require("../utils/addPartner");
 
 // get img from ../img/
 
