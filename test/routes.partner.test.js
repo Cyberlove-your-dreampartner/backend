@@ -8,14 +8,13 @@ require("dotenv").config();
 const { describe, it } = require("mocha");
 const { expect } = require("chai");
 const request = require("supertest");
-const sinon = require("sinon")
+const sinon = require("sinon");
 
 const app = require("../app");
 const jwt = require("jsonwebtoken");
 
 const IMGUR = require("../utils/imgur");
-const ADDPARTNER = require("../utils/addpartner");
-
+const ADDPARTNER = require("../utils/addPartner");
 
 describe("POST /partner/generateImage", () => {
   let verifyStub;
@@ -34,7 +33,6 @@ describe("POST /partner/generateImage", () => {
   });
 
   it("should return an array of 4 images based on the query", async () => {
-
     verifyStub.returns({ userId: "fakeUserId" });
 
     // Define the query parameters for the request
@@ -106,7 +104,9 @@ describe("POST /partner/generateImage", () => {
 
     // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body).to.deep.equal({ message: "CustomError Custom error message" });
+    expect(response.body).to.deep.equal({
+      message: "CustomError Custom error message",
+    });
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
     sinon.assert.calledOnceWithExactly(aggregateStub, [
@@ -137,7 +137,6 @@ describe("POST /partner/characterSetting", () => {
   });
 
   it("should return an error if user has not selected a partner", async () => {
-
     // Stub the JWT verification to return an empty userId
     verifyStub.returns({ userId: "" });
 
@@ -157,7 +156,9 @@ describe("POST /partner/characterSetting", () => {
 
     // Perform assertions on the response
     expect(response.status).to.equal(409);
-    expect(response.body.message).to.equal("The user has not yet selected a partner");
+    expect(response.body.message).to.equal(
+      "The user has not yet selected a partner"
+    );
     // Verify the function calls and stub invocations
     sinon.assert.calledOnce(verifyStub);
     sinon.assert.notCalled(findOneStub);
@@ -165,7 +166,6 @@ describe("POST /partner/characterSetting", () => {
   });
 
   it("should update partner and return success message", async () => {
-
     // Stub the JWT verification to return a fake userId
     verifyStub.returns({ _id: "fakeUserId" });
 
@@ -177,7 +177,7 @@ describe("POST /partner/characterSetting", () => {
       personality: "Introverted",
     };
     // Create a test partner object with empty fields
-    const testpartner = new Partner ({
+    const testpartner = new Partner({
       nickname: "",
       name: "",
       MBTI: "",
@@ -206,7 +206,6 @@ describe("POST /partner/characterSetting", () => {
   });
 
   it("should return an error if an exception is thrown", async () => {
-
     // Stub the JWT verification to return a fake userId
     verifyStub.returns({ _id: "fakeUserId" });
     const updateData = {
@@ -243,12 +242,11 @@ describe("POST /partner/", () => {
   let verifyStub;
   let addPartnerStub;
 
-
   // Set up stubs before each test
   beforeEach(() => {
     // Stub the JWT verification function
     verifyStub = sinon.stub(jwt, "verify");
-    addPartnerStub = sinon.stub(ADDPARTNER, 'addPartner');
+    addPartnerStub = sinon.stub(ADDPARTNER, "addPartner");
   });
 
   // Restore stubs after each test
@@ -258,7 +256,6 @@ describe("POST /partner/", () => {
   });
 
   it("should create a partner and return a success message", async () => {
-
     verifyStub.returns({ userId: "fakeUserId" });
 
     // Simulate successful partner creation
@@ -282,7 +279,6 @@ describe("POST /partner/", () => {
   });
 
   it("should return an error if an exception is thrown", async () => {
-
     verifyStub.returns({ userId: "fakeUserId" });
     addPartnerStub.throws({
       name: "CustomError",
@@ -318,7 +314,7 @@ describe("POST /partner/image", () => {
     verifyStub = sinon.stub(jwt, "verify");
     uploadImgStub = sinon.stub(IMGUR, "uploadImg");
     saveImageStub = sinon.stub(Image.prototype, "save");
-    addPartnerStub = sinon.stub(ADDPARTNER, 'addPartner');
+    addPartnerStub = sinon.stub(ADDPARTNER, "addPartner");
   });
 
   afterEach(() => {
@@ -329,7 +325,6 @@ describe("POST /partner/image", () => {
   });
 
   it("should upload an image and create a new record in the database", async () => {
-
     verifyStub.returns({ userId: "fakeUserId" });
     uploadImgStub.resolves("fakeImgURL");
     saveImageStub.resolves();
