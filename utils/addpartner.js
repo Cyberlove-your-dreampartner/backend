@@ -2,8 +2,8 @@ require("dotenv").config();
 const Partner = require("../models/partner");
 const Image = require("../models/image");
 
-const DID = require("../utils/d-id");
-const CLOUDINARY = require("../utils/cloudinary");
+const DID = require("./d-id");
+const CLOUDINARY = require("./cloudinary");
 
 const addPartner = async (imageId, userId) => {
   try {
@@ -15,8 +15,13 @@ const addPartner = async (imageId, userId) => {
     await newPartner.save();
     const image = await Image.findById(imageId);
     if (!image.videoURL) {
-      const videoId = await DID.createIdleVideo(image.imgURL);
-      const didVideoURL = await DID.getIdleVideoURL(videoId);
+      if (!image.videoId) {
+        const videoId = await DID.createIdleVideo(image.imgURL);
+        image.videoId = videoId;
+        await image.save();
+      }
+      console.log("videoId", image.videoId);
+      const didVideoURL = await DID.getIdleVideoURL(image.videoId);
       image.videoURL = await CLOUDINARY.uploadVideo(didVideoURL);
       await image.save();
     }
