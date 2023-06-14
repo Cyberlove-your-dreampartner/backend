@@ -70,6 +70,8 @@ const getIdleVideoURL = async (videoId) => {
     if (data.status === "done") {
       videoURL = data.result_url;
       break;
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
   }
   return videoURL;
